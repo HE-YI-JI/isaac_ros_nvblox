@@ -46,7 +46,7 @@ def start(args: lu.ArgumentContainer) -> List[Action]:
         camera_serial_number = camera_serial_numbers[idx]
         run_splitter = run_splitter_list[idx]
         nodes = []
-        camera_name = f'car/camera{idx}'
+        camera_name = f'camera{idx}'
         # Config file
         if run_splitter:
             config_file_path = EMITTER_FLASHING_CONFIG_FILE_PATH
