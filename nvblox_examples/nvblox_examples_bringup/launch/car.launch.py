@@ -38,15 +38,13 @@ def start(args: lu.ArgumentContainer) -> List[Action]:
             IfCondition(PythonExpression(['int("', str(args.num_cameras), '") > 4']))),
     )
 
-    camera_serial_numbers = [None]
     run_splitter_list = [False] * args.num_cameras
     run_splitter_list[0] = True
     
     for idx in range(args.num_cameras):
-        camera_serial_number = camera_serial_numbers[idx]
         run_splitter = run_splitter_list[idx]
         nodes = []
-        camera_name = f'camera{idx}'
+        camera_name = f'car/camera{idx}'
         # Config file
         if run_splitter:
             config_file_path = EMITTER_FLASHING_CONFIG_FILE_PATH
@@ -77,14 +75,14 @@ def start(args: lu.ArgumentContainer) -> List[Action]:
                         'output_qos': 'SENSOR_DATA'
                     }],
                     remappings=[
-                        ('input/infra_1', f'/car/{camera_name}/infra1/image_rect_raw'),
-                        ('input/infra_1_metadata', f'/car/{camera_name}/infra1/metadata'),
-                        ('input/infra_2', f'/car/{camera_name}/infra2/image_rect_raw'),
-                        ('input/infra_2_metadata', f'/car/{camera_name}/infra2/metadata'),
-                        ('input/depth', f'/car/{camera_name}/depth/image_rect_raw'),
-                        ('input/depth_metadata', f'/car/{camera_name}/depth/metadata'),
-                        ('input/pointcloud', f'/car/{camera_name}/depth/color/points'),
-                        ('input/pointcloud_metadata', f'/car/{camera_name}/depth/metadata'),
+                        ('input/infra_1', f'/{camera_name}/infra1/image_rect_raw'),
+                        ('input/infra_1_metadata', f'/{camera_name}/infra1/metadata'),
+                        ('input/infra_2', f'/{camera_name}/infra2/image_rect_raw'),
+                        ('input/infra_2_metadata', f'/{camera_name}/infra2/metadata'),
+                        ('input/depth', f'/{camera_name}/depth/image_rect_raw'),
+                        ('input/depth_metadata', f'/{camera_name}/depth/metadata'),
+                        ('input/pointcloud', f'/{camera_name}/depth/color/points'),
+                        ('input/pointcloud_metadata', f'/{camera_name}/depth/metadata'),
                 ])
             )
         # Note(xinjieyao: 2024/08/24): Multi-rs launch use RealSenseNodeFactory could be unstable
