@@ -105,18 +105,88 @@ def start(args: lu.ArgumentContainer) -> List[Action]:
             # Delay for 1 second to make sure that the static topics from the rosbag are published.
             delay=1.0,
         ))
+    
+
+
+    camera = NvbloxCamera.multi_realsense
+    # NOTE(alexmillane, 19.08.2024): At the moment in nvblox_examples we only support a single
+    # camera running cuVSLAM, even in the multi-camera case: we run *nvblox* on multiple
+    # cameras, but cuVSLAM on camera0 only.
+    realsense_remappings = [
+        ('visual_slam/camera_info_0', 'car//camera0/infra1/camera_info'),
+        ('visual_slam/camera_info_1', 'car//camera0/infra2/camera_info'),
+        ('visual_slam/image_0', 'car//camera0/realsense_splitter_node/output/infra_1'),
+        ('visual_slam/image_1', 'car//camera0/realsense_splitter_node/output/infra_2'),
+        ('visual_slam/imu', 'car/camera0/imu'),
+    ]
+
+    # Base frame: 
+    # - camera0_link for single realsense,
+    # - base_link for everything else (multi realsense)
+    if camera is NvbloxCamera.realsense:
+        base_frame = 'car/camera0_link'
+    else:
+        base_frame = 'car/base_link'
+
+    actions.append(lu.log_info(f'Starting cuVSLAM with base_frame: {base_frame}'))
+
+    base_parameters = {
+        'num_cameras': 2,
+        'min_num_images': 2,
+        'enable_localization_n_mapping': False,
+        'gyro_noise_density': 0.000244,
+        'gyro_random_walk': 0.000019393,
+        'accel_noise_density': 0.001862,
+        'accel_random_walk': 0.003,
+        'calibration_frequency': 200.0,
+        'rig_frame': 'car/base_link',
+        'imu_frame': 'car/front_stereo_camera_imu',
+        'enable_slam_visualization': True,
+        'enable_landmarks_view': True,
+        'enable_observations_view': True,
+        'path_max_size': 200,
+        'verbosity': 5,
+        'enable_debug_mode': False,
+        'debug_dump_path': '/tmp/cuvslam',
+        'map_frame': 'map',
+        'odom_frame': 'odom',
+        'base_frame': base_frame,
+    }
+    realsense_parameters = {
+        'enable_rectified_pose': True,
+        'enable_image_denoising': False,
+        'rectified_images': True,
+        'imu_frame': 'car/camera0_gyro_optical_frame',
+        'camera_optical_frames': [
+            'car/camera0_infra1_optical_frame',
+            'car/camera0_infra2_optical_frame',
+        ],
+    }
+
+    if camera is NvbloxCamera.realsense or NvbloxCamera.multi_realsense:
+        remappings = realsense_remappings
+        camera_parameters = realsense_parameters
+    else:
+        raise Exception(f'Camera {camera} not implemented for vslam.')
+
+    parameters = []
+    parameters.append(base_parameters)
+    parameters.append(camera_parameters)
+    parameters.append(
+        {'enable_ground_constraint_in_odometry': args.enable_ground_constraint_in_odometry})
+    parameters.append({'enable_imu_fusion': args.enable_imu_fusion})
+
+    vslam_node = ComposableNode(
+        name='visual_slam_node',
+        package='isaac_ros_visual_slam',
+        plugin='nvidia::isaac_ros::visual_slam::VisualSlamNode',
+        remappings=remappings,
+        parameters=parameters)
+    actions.append(lu.load_composable_nodes(args.container_name, [vslam_node]))
+
     # People detection for multi-RS
     #camera_namespaces = ['camera0', 'camera1', 'camera2', 'camera3']
     camera_namespaces = [i+'/'+j for i in ['car', 'uav1', 'uav2', 'uav3', 'uav4'] for j in ['camera0', 'camera1', 'camera2', 'camera3']]
-    camera_input_topics = []
-    input_camera_info_topics= []
-    output_resized_image_topics = []
-    output_resized_camera_info_topics = []
-    for ns in camera_namespaces:
-        camera_input_topics.append(f'/{ns}/color/image_raw')
-        input_camera_info_topics.append(f'/{ns}/color/camera_info')
-        output_resized_image_topics.append(f'/{ns}/segmentation/image_resized')
-        output_resized_camera_info_topics.append(f'/{ns}/segmentation/camera_info_resized')
 
     num_cameras = int(args.num_cameras)
 #    use_lidar = lu.is_true(args.lidar)
