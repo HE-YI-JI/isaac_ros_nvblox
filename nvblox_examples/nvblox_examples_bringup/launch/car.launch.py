@@ -92,31 +92,16 @@ def start(args: lu.ArgumentContainer) -> List[Action]:
             TimerAction(
                 period=idx * 10.0, actions=[lu.load_composable_nodes(args.container_name, nodes)]))
         actions.append(log_message)
-    
-    # Visual SLAM
-    actions.append(
-        lu.include(
-            'nvblox_examples_bringup',
-            'launch/perception/vslam.launch.py',
-            launch_arguments={
-                'container_name': args.container_name,
-                'camera': camera_mode,
-            },
-            # Delay for 1 second to make sure that the static topics from the rosbag are published.
-            delay=1.0,
-        ))
-    
-
 
     camera = NvbloxCamera.multi_realsense
     # NOTE(alexmillane, 19.08.2024): At the moment in nvblox_examples we only support a single
     # camera running cuVSLAM, even in the multi-camera case: we run *nvblox* on multiple
     # cameras, but cuVSLAM on camera0 only.
     realsense_remappings = [
-        ('visual_slam/camera_info_0', 'car//camera0/infra1/camera_info'),
-        ('visual_slam/camera_info_1', 'car//camera0/infra2/camera_info'),
-        ('visual_slam/image_0', 'car//camera0/realsense_splitter_node/output/infra_1'),
-        ('visual_slam/image_1', 'car//camera0/realsense_splitter_node/output/infra_2'),
+        ('visual_slam/camera_info_0', '/car/camera0/infra1/camera_info'),
+        ('visual_slam/camera_info_1', '/car/camera0/infra2/camera_info'),
+        ('visual_slam/image_0', '/car/camera0/realsense_splitter_node/output/infra_1'),
+        ('visual_slam/image_1', '/car/camera0/realsense_splitter_node/output/infra_2'),
         ('visual_slam/imu', 'car/camera0/imu'),
     ]
 
@@ -190,9 +175,9 @@ def start(args: lu.ArgumentContainer) -> List[Action]:
 
     num_cameras = int(args.num_cameras)
 #    use_lidar = lu.is_true(args.lidar)
-    base_config = lu.get_path('nvblox_examples_bringup', 'config/nvblox/nvblox_base.yaml')
+    base_config = lu.get_path('nvblox_examples_bringup', 'config/nvblox/car_nvblox_base.yaml')
     multi_realsense_config = lu.get_path(
-        'nvblox_examples_bringup', 'config/nvblox/specializations/nvblox_multi_realsense.yaml')
+        'nvblox_examples_bringup', 'config/nvblox/specializations/car_nvblox_multi_realsense.yaml')
     mode_config = {}
     remappings = []
     for i in range(0, args.num_cameras):
