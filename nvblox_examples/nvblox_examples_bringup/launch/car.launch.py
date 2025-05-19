@@ -158,8 +158,8 @@ def start(args: lu.ArgumentContainer) -> List[Action]:
     parameters.append(base_parameters)
     parameters.append(camera_parameters)
     parameters.append(
-        {'enable_ground_constraint_in_odometry': args.enable_ground_constraint_in_odometry})
-    parameters.append({'enable_imu_fusion': args.enable_imu_fusion})
+        {'enable_ground_constraint_in_odometry': True})
+    parameters.append({'enable_imu_fusion': True})
 
     vslam_node = ComposableNode(
         name='visual_slam_node',
